@@ -1,5 +1,6 @@
 import time
 import json
+import logging
 from paho.mqtt import client
 
 import os
@@ -46,9 +47,9 @@ class LapTimer():
         self.lap_number = 1
 
     
-        self.ant_topic = b"/v3/wireless_module/4/data"
-        self.lap_topic = b"trike/lap/trigger"
-        self.lap_data_topic = b"trike/lap/data"
+        self.ant_topic = "/v3/wireless_module/3/data"
+        self.lap_topic = "trike/lap/trigger"
+        self.lap_data_topic = "trike/lap/data"
         self.topics = [self.ant_topic, self.lap_topic]
 
 
@@ -67,6 +68,7 @@ class LapTimer():
                 "speed": lap_speed,
 
             }
+            print(lap_data)
             self.mqtt.publish(self.lap_data_topic, json.dumps(lap_data))
 
             self.last_lap_distance = self.last_distance
@@ -83,7 +85,8 @@ class LapTimer():
 
         elif message.topic == self.ant_topic:
             msg_data = json.loads(str(message.payload.decode("utf-8")))
-            self.last_lap_distance = msg_data["sensors"][4]["value"]
+            self.last_lap_distance = msg_data["sensors"][3]["value"]["latitude"]
+            print(self.last_lap_distance)
 
 
 
