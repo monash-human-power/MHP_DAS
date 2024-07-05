@@ -8,6 +8,7 @@
 #include "esp_log.h"
 
 
+
 void app_main() {
 
     //Initialize configuration structures using macro initializers
@@ -33,9 +34,9 @@ void app_main() {
 
     //Configure message to transmit
     twai_message_t message;
-    message.identifier = 0xAAAA;
-    message.extd = 1;
-    message.data_length_code = 4;
+    message.identifier = 0xAAAA; //can be used to determine source of msg? and for filtering. also determines priority lower value = igher priority
+    message.extd = 1; // enables 29 bit ID instead of 11
+    message.data_length_code = 4; 
     for (int i = 0; i < 4; i++) {
         message.data[i] = 0;
     }
