@@ -24,6 +24,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "i2c.c"
 
 /* --------------------- Definitions and static variables ------------------ */
 
@@ -59,24 +60,25 @@ static SemaphoreHandle_t done_sem;
 /* --------------------------- Tasks and Functions -------------------------- */
 
 static void twai_transmit_task(void *arg) {
-    twai_message_t tx_msg = {
-        // Message type and format settings
-        .extd = 0,          // Standard Format message (11-bit ID)
-        .rtr = 0,           // Send a data frame
-        .ss = 0,            // Not single shot
-        .self = 1,          // Message is a self reception request (loopback)
-        .dlc_non_comp = 0,  // DLC is less than 8
-        // Message ID and payload
-        .identifier = MSG_ID,
-        .data_length_code = 1,
-        .data = {0},
-    };
+    while (1) {
+        twai_message_t tx_msg = {
+            // Message type and format settings
+            .extd = 0,          // Standard Format message (11-bit ID)
+            .rtr = 0,           // Send a data frame
+            .ss = 0,            // Not single shot
+            .self = 1,          // Message is a self reception request (loopback)
+            .dlc_non_comp = 0,  // DLC is less than 8
+            // Message ID and payload
+            .identifier = MSG_ID,
+            .data_length_code = 1,
+            .data = {0},
+        };
 
-    for (int iter = 0; iter < NO_OF_ITERS; iter++) {
         xSemaphoreTake(tx_sem, portMAX_DELAY);
         for (int i = 0; i < NO_OF_MSGS; i++) {
             // Transmit messages using self reception request
-            tx_msg.data[0] = i;
+            // Read data from sensor
+            tx_msg.data[0] = read();
             ESP_ERROR_CHECK(twai_transmit(&tx_msg, portMAX_DELAY));
             vTaskDelay(pdMS_TO_TICKS(10));
         }
@@ -87,7 +89,7 @@ static void twai_transmit_task(void *arg) {
 static void twai_receive_task(void *arg) {
     twai_message_t rx_message;
 
-    for (int iter = 0; iter < NO_OF_ITERS; iter++) {
+    while (1) {
         xSemaphoreTake(rx_sem, portMAX_DELAY);
         for (int i = 0; i < NO_OF_MSGS; i++) {
             // Receive message and print message data
@@ -102,10 +104,13 @@ static void twai_receive_task(void *arg) {
 
 static void twai_control_task(void *arg) {
     xSemaphoreTake(ctrl_sem, portMAX_DELAY);
-    for (int iter = 0; iter < NO_OF_ITERS; iter++) {
+    while (1) {
         // Start TWAI Driver for this iteration
         ESP_ERROR_CHECK(twai_start());
         ESP_LOGI(EXAMPLE_TAG, "Driver started");
+
+        // Setup I2C
+        setup();
 
         // Trigger TX and RX tasks to start transmitting/receiving
         xSemaphoreGive(rx_sem);
