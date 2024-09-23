@@ -26,7 +26,7 @@ static esp_err_t i2c_master_init(void) {
     return i2c_driver_install(i2c_master_port, conf.mode, 0, 0, 0);
 }
 
-esp_err_t read_reg(uint8_t dev_address, uint8_t reg, uint8_t *readBuffer, size_t len) {
+esp_err_t read_reg(uint8_t dev_address, uint8_t reg, uint8_t* readBuffer, size_t len) {
     return (i2c_master_write_read_device(I2C_NUM, dev_address, &reg, 1, readBuffer, len, 2000));
 }
 
@@ -66,7 +66,7 @@ void setup() {
     read_reg(SPL_ADDR, 0x06, spl_data, 1);
 
     printf("preasure cfg:");
-    binprintf(spl_data[0]);  // check the preasure sensor configuration
+    binprintf(spl_data[0]);  // check the pressure sensor configuration
 
     read_reg(SPL_ADDR, 0x07, spl_data, 1);
     write_reg(SPL_ADDR, 0x07, 240);  // set to external sensor mode and 128 measure /sec
@@ -90,7 +90,7 @@ void setup() {
     printf("c0:%d, c1:%d\n", c0, c1);
 }
 
-uint8_t read() {
+void read(uint8_t* arr, int size) {
     uint8_t mpu_data[10];
     uint8_t spl_data_msb[1];
     uint8_t spl_data_lsb[1];
@@ -121,19 +121,12 @@ uint8_t read() {
 
     float temp = (float)raw_temp / (float)scaleFactor;
 
-    uint8_t res;
-    if (temp > 127) {
-        res = 127;
-    } else if (temp < -128) {
-        res = -128;
-    } else {
-        res = (int8_t)temp;  // Safe cast
-    }
-
-    res = c0 * 0.5 + c1 * temp;  // out
+    temp = c0 * 0.5 + c1 * temp;  // out
     // printf("Temperature: %.3f\n", temp);
     // printf("\n");
     // vTaskDelay(75);
-
-    return res;
+    arr[0] = temp;
+    arr[1] = (uint8_t)(xg * 100.0f);
+    arr[2] = (uint8_t)(yg * 100.0f);
+    arr[3] = (uint8_t)(zg * 100.0f);
 }

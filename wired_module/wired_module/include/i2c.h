@@ -17,6 +17,6 @@ esp_err_t write_reg(uint8_t dev_address, uint8_t reg, uint8_t data);
 
 void binprintf(uint8_t v);
 
-uint8_t read();
+void read(uint8_t *, int);
 
 #endif

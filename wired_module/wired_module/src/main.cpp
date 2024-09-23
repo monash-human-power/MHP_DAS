@@ -70,17 +70,23 @@ static void twai_transmit_task(void *arg) {
             .dlc_non_comp = 0,  // DLC is less than 8
             // Message ID and payload
             .identifier = MSG_ID,
-            .data_length_code = 1,
-            .data = {0},
+            .data_length_code = 8,
         };
 
         xSemaphoreTake(tx_sem, portMAX_DELAY);
         for (int i = 0; i < NO_OF_MSGS; i++) {
             // Transmit messages using self reception request
             // Read data from sensor
-            tx_msg.data[0] = read();
+            int size = 8;
+            uint8_t data[size];
+            read(data, size);
+
+            for (int i = 0; i < size; i++) {
+                tx_msg.data[i] = data[i];
+            }
+
             ESP_ERROR_CHECK(twai_transmit(&tx_msg, portMAX_DELAY));
-            vTaskDelay(pdMS_TO_TICKS(10));
+            vTaskDelay(pdMS_TO_TICKS(100));
         }
     }
     vTaskDelete(NULL);
@@ -94,7 +100,7 @@ static void twai_receive_task(void *arg) {
         for (int i = 0; i < NO_OF_MSGS; i++) {
             // Receive message and print message data
             ESP_ERROR_CHECK(twai_receive(&rx_message, portMAX_DELAY));
-            ESP_LOGI(EXAMPLE_TAG, "Msg received\tID 0x%lx\tData = %d", rx_message.identifier, rx_message.data[0]);
+            ESP_LOGI(EXAMPLE_TAG, "Msg received\tID 0x%lx\tData = %d, %d, %d, %d", rx_message.identifier, rx_message.data[0], rx_message.data[1], rx_message.data[2], rx_message.data[3]);
         }
         // Indicate to control task all messages received for this iteration
         xSemaphoreGive(ctrl_sem);
