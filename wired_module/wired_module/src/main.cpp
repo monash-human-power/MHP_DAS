@@ -33,10 +33,9 @@
 #define NO_OF_ITERS 3
 #define TX_GPIO_NUM (gpio_num_t)17
 #define RX_GPIO_NUM (gpio_num_t)16
-#define TX_TASK_PRIO 8          // Sending task priority
-#define RX_TASK_PRIO 9          // Receiving task priority
-#define CTRL_TSK_PRIO 10        // Control task priority
-#define MSG_ID (uint32_t)0x555  // 11 bit standard format ID
+#define TX_TASK_PRIO 8    // Sending task priority
+#define RX_TASK_PRIO 9    // Receiving task priority
+#define CTRL_TSK_PRIO 10  // Control task priority
 #define EXAMPLE_TAG "TWAI Self Test"
 
 // Specify the file to be cpp
@@ -46,9 +45,8 @@ void app_main(void);
 
 static const twai_timing_config_t t_config = TWAI_TIMING_CONFIG_25KBITS();
 // Filter all other IDs except MSG_ID
-static const twai_filter_config_t f_config = {.acceptance_code = (MSG_ID << 21),
-                                              .acceptance_mask = ~(TWAI_STD_ID_MASK << 21),
-                                              .single_filter = true};
+static const twai_filter_config_t f_config = {.acceptance_code = 0, .acceptance_mask = 0xFFFFFFFF, .single_filter = true};
+
 // Set to NO_ACK mode due to self testing with single module
 static const twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(TX_GPIO_NUM, RX_GPIO_NUM, TWAI_MODE_NO_ACK);
 
@@ -81,7 +79,7 @@ static void twai_transmit_task(void *arg) {
             .self = 1,          // Message is a self reception request (loopback)
             .dlc_non_comp = 0,  // DLC is less than 8
             // Message ID and payload
-            .identifier = (uint32_t)0x555,
+            .identifier = (uint32_t)0x556,
             .data_length_code = 8,
         };
 
@@ -90,14 +88,14 @@ static void twai_transmit_task(void *arg) {
             // Transmit messages using self reception request
 
             // read data from sensor and move into can bus message
-            // readTemp(tx_msg_temp.data);
+            readTemp(tx_msg_temp.data);
             readGyroX(tx_msg_gyro_x.data);
 
             // send
-            // ESP_ERROR_CHECK(twai_transmit(&tx_msg_temp, portMAX_DELAY));
+            ESP_ERROR_CHECK(twai_transmit(&tx_msg_temp, portMAX_DELAY));
             ESP_ERROR_CHECK(twai_transmit(&tx_msg_gyro_x, portMAX_DELAY));
 
-            vTaskDelay(pdMS_TO_TICKS(100));
+            vTaskDelay(pdMS_TO_TICKS(500));
         }
     }
     vTaskDelete(NULL);
@@ -116,12 +114,6 @@ static void twai_receive_task(void *arg) {
                      rx_message.identifier,
                      rx_message.data[0], rx_message.data[1], rx_message.data[2], rx_message.data[3],
                      rx_message.data[4], rx_message.data[5], rx_message.data[6], rx_message.data[7]);
-
-            // ESP_ERROR_CHECK(twai_receive(&rx_message, portMAX_DELAY));
-            // ESP_LOGI(EXAMPLE_TAG, "Msg received\tID 0x%lx\tData = %d, %d, %d, %d, %d, %d, %d, %d",
-            //          rx_message.identifier,
-            //          rx_message.data[0], rx_message.data[1], rx_message.data[2], rx_message.data[3],
-            //          rx_message.data[4], rx_message.data[5], rx_message.data[6], rx_message.data[7]);
         }
 
         // Indicate to control task all messages received for this iteration

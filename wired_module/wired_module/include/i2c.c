@@ -123,7 +123,7 @@ void readTemp(uint8_t* data) {
 
     floatToDigitArray(temp, data);  // put the temp into the data array arg
 
-    // printf("temp: %f\n", temp);
+    printf("temp: %f\n", temp);
 }
 
 void readGyroX(uint8_t* data) {
@@ -138,7 +138,7 @@ void readGyroX(uint8_t* data) {
     float yg = (float)RAWY / 16384;
     float zg = (float)RAWZ / 16384;
 
-    floatToDigitArray(xg, data);  // put the temp into the data array arg
+    floatToDigitArray(zg, data);  // put the temp into the data array arg
 
-    printf("gyro: x=%f\n", xg);  // out
+    printf("gyro: z=%f\n", zg);  // out
 }
