@@ -24,7 +24,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-#include "i2c.c"
+#include "i2c.cpp"
 
 /* --------------------- Definitions and static variables ------------------ */
 
@@ -36,7 +36,7 @@
 #define TX_TASK_PRIO 8    // Sending task priority
 #define RX_TASK_PRIO 9    // Receiving task priority
 #define CTRL_TSK_PRIO 10  // Control task priority
-#define EXAMPLE_TAG "TWAI Self Test"
+#define EXAMPLE_TAG "Self Test"
 
 // Specify the file to be cpp
 extern "C" {
@@ -95,7 +95,7 @@ static void twai_transmit_task(void *arg) {
             ESP_ERROR_CHECK(twai_transmit(&tx_msg_temp, portMAX_DELAY));
             ESP_ERROR_CHECK(twai_transmit(&tx_msg_gyro_x, portMAX_DELAY));
 
-            vTaskDelay(pdMS_TO_TICKS(500));
+            vTaskDelay(pdMS_TO_TICKS(1000));
         }
     }
     vTaskDelete(NULL);
@@ -114,6 +114,9 @@ static void twai_receive_task(void *arg) {
                      rx_message.identifier,
                      rx_message.data[0], rx_message.data[1], rx_message.data[2], rx_message.data[3],
                      rx_message.data[4], rx_message.data[5], rx_message.data[6], rx_message.data[7]);
+
+            // Convert binary data back to float
+            ESP_LOGI(EXAMPLE_TAG, "Msg received\tID 0x%lx\tConverted Data: %f", rx_message.identifier, *((float *)rx_message.data));
         }
 
         // Indicate to control task all messages received for this iteration

@@ -91,17 +91,6 @@ void setup() {
     printf("c0:%d, c1:%d\n", c0, c1);
 }
 
-void floatToDigitArray(float num, uint8_t* arr) {
-    // Convert float to string
-    char str[50];
-    snprintf(str, sizeof(str), "%.6f", num);  // Adjust precision as needed
-
-    // Extract digits
-    for (int i = 0; i < strlen(str); i++) {
-        arr[i] = str[i] - '0';  // Convert char to int
-    }
-}
-
 void readTemp(uint8_t* data) {
     uint8_t spl_data_msb[1];
     uint8_t spl_data_lsb[1];
@@ -121,9 +110,9 @@ void readTemp(uint8_t* data) {
     float temp = (float)raw_temp / (float)scaleFactor;
     temp = c0 * 0.5 + c1 * temp;
 
-    floatToDigitArray(temp, data);  // put the temp into the data array arg
+    memcpy(data, &temp, sizeof(temp));
 
-    printf("temp: %f\n", temp);
+    printf("\ntemp: %f, ", temp);
 }
 
 void readGyroX(uint8_t* data) {
@@ -138,7 +127,7 @@ void readGyroX(uint8_t* data) {
     float yg = (float)RAWY / 16384;
     float zg = (float)RAWZ / 16384;
 
-    floatToDigitArray(zg, data);  // put the temp into the data array arg
+    memcpy(data, &zg, sizeof(zg));  // put the temp into the data array arg
 
     printf("gyro: z=%f\n", zg);  // out
 }
