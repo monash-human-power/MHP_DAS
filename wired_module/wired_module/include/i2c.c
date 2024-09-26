@@ -1,9 +1,10 @@
 #include "driver/i2c.h"
 
+#include <string.h>
+
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "i2c.h"
 
 #define I2C_NUM I2C_NUM_0
 #define I2C_SCL GPIO_NUM_22
@@ -90,23 +91,21 @@ void setup() {
     printf("c0:%d, c1:%d\n", c0, c1);
 }
 
-void read(uint8_t* arr, int size) {
-    uint8_t mpu_data[10];
+void floatToDigitArray(float num, uint8_t* arr) {
+    // Convert float to string
+    char str[50];
+    snprintf(str, sizeof(str), "%.6f", num);  // Adjust precision as needed
+
+    // Extract digits
+    for (int i = 0; i < strlen(str); i++) {
+        arr[i] = str[i] - '0';  // Convert char to int
+    }
+}
+
+void readTemp(uint8_t* data) {
     uint8_t spl_data_msb[1];
     uint8_t spl_data_lsb[1];
     uint8_t spl_data_xlsb[1];
-
-    read_reg(MPU_ADDR, 0x3B, mpu_data, 6);
-    int16_t RAWX = (mpu_data[0] << 8) | mpu_data[1];
-    int16_t RAWY = (mpu_data[2] << 8) | mpu_data[3];
-    int16_t RAWZ = (mpu_data[4] << 8) | mpu_data[5];
-
-    float xg = (float)RAWX / 16384;
-    float yg = (float)RAWY / 16384;
-    float zg = (float)RAWZ / 16384;
-
-    // printf("Gyroscope:\n");
-    // printf("x=%.2f\ty=%.2f\tz=%.2f\n", xg, yg, zg);  // out
 
     read_reg(SPL_ADDR, 0x03, spl_data_msb, 1);
     read_reg(SPL_ADDR, 0x04, spl_data_lsb, 1);
@@ -120,13 +119,26 @@ void read(uint8_t* arr, int size) {
     }
 
     float temp = (float)raw_temp / (float)scaleFactor;
+    temp = c0 * 0.5 + c1 * temp;
 
-    temp = c0 * 0.5 + c1 * temp;  // out
-    // printf("Temperature: %.3f\n", temp);
-    // printf("\n");
-    // vTaskDelay(75);
-    arr[0] = temp;
-    arr[1] = (uint8_t)(xg * 100.0f);
-    arr[2] = (uint8_t)(yg * 100.0f);
-    arr[3] = (uint8_t)(zg * 100.0f);
+    floatToDigitArray(temp, data);  // put the temp into the data array arg
+
+    // printf("temp: %f\n", temp);
+}
+
+void readGyroX(uint8_t* data) {
+    uint8_t mpu_data[10];
+
+    read_reg(MPU_ADDR, 0x3B, mpu_data, 6);
+    int16_t RAWX = (mpu_data[0] << 8) | mpu_data[1];
+    int16_t RAWY = (mpu_data[2] << 8) | mpu_data[3];
+    int16_t RAWZ = (mpu_data[4] << 8) | mpu_data[5];
+
+    float xg = (float)RAWX / 16384;
+    float yg = (float)RAWY / 16384;
+    float zg = (float)RAWZ / 16384;
+
+    floatToDigitArray(xg, data);  // put the temp into the data array arg
+
+    printf("gyro: x=%f\n", xg);  // out
 }

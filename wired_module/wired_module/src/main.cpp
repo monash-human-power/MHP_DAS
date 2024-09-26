@@ -61,7 +61,7 @@ static SemaphoreHandle_t done_sem;
 
 static void twai_transmit_task(void *arg) {
     while (1) {
-        twai_message_t tx_msg = {
+        twai_message_t tx_msg_temp = {
             // Message type and format settings
             .extd = 0,          // Standard Format message (11-bit ID)
             .rtr = 0,           // Send a data frame
@@ -69,23 +69,34 @@ static void twai_transmit_task(void *arg) {
             .self = 1,          // Message is a self reception request (loopback)
             .dlc_non_comp = 0,  // DLC is less than 8
             // Message ID and payload
-            .identifier = MSG_ID,
+            .identifier = (uint32_t)0x555,
+            .data_length_code = 8,
+        };
+
+        twai_message_t tx_msg_gyro_x = {
+            // Message type and format settings
+            .extd = 0,          // Standard Format message (11-bit ID)
+            .rtr = 0,           // Send a data frame
+            .ss = 0,            // Not single shot
+            .self = 1,          // Message is a self reception request (loopback)
+            .dlc_non_comp = 0,  // DLC is less than 8
+            // Message ID and payload
+            .identifier = (uint32_t)0x555,
             .data_length_code = 8,
         };
 
         xSemaphoreTake(tx_sem, portMAX_DELAY);
         for (int i = 0; i < NO_OF_MSGS; i++) {
             // Transmit messages using self reception request
-            // Read data from sensor
-            int size = 8;
-            uint8_t data[size];
-            read(data, size);
 
-            for (int i = 0; i < size; i++) {
-                tx_msg.data[i] = data[i];
-            }
+            // read data from sensor and move into can bus message
+            // readTemp(tx_msg_temp.data);
+            readGyroX(tx_msg_gyro_x.data);
 
-            ESP_ERROR_CHECK(twai_transmit(&tx_msg, portMAX_DELAY));
+            // send
+            // ESP_ERROR_CHECK(twai_transmit(&tx_msg_temp, portMAX_DELAY));
+            ESP_ERROR_CHECK(twai_transmit(&tx_msg_gyro_x, portMAX_DELAY));
+
             vTaskDelay(pdMS_TO_TICKS(100));
         }
     }
@@ -97,11 +108,22 @@ static void twai_receive_task(void *arg) {
 
     while (1) {
         xSemaphoreTake(rx_sem, portMAX_DELAY);
+
         for (int i = 0; i < NO_OF_MSGS; i++) {
             // Receive message and print message data
             ESP_ERROR_CHECK(twai_receive(&rx_message, portMAX_DELAY));
-            ESP_LOGI(EXAMPLE_TAG, "Msg received\tID 0x%lx\tData = %d, %d, %d, %d", rx_message.identifier, rx_message.data[0], rx_message.data[1], rx_message.data[2], rx_message.data[3]);
+            ESP_LOGI(EXAMPLE_TAG, "Msg received\tID 0x%lx\tData = %d, %d, %d, %d, %d, %d, %d, %d",
+                     rx_message.identifier,
+                     rx_message.data[0], rx_message.data[1], rx_message.data[2], rx_message.data[3],
+                     rx_message.data[4], rx_message.data[5], rx_message.data[6], rx_message.data[7]);
+
+            // ESP_ERROR_CHECK(twai_receive(&rx_message, portMAX_DELAY));
+            // ESP_LOGI(EXAMPLE_TAG, "Msg received\tID 0x%lx\tData = %d, %d, %d, %d, %d, %d, %d, %d",
+            //          rx_message.identifier,
+            //          rx_message.data[0], rx_message.data[1], rx_message.data[2], rx_message.data[3],
+            //          rx_message.data[4], rx_message.data[5], rx_message.data[6], rx_message.data[7]);
         }
+
         // Indicate to control task all messages received for this iteration
         xSemaphoreGive(ctrl_sem);
     }
