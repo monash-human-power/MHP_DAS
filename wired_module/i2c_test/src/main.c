@@ -1,156 +1,52 @@
-#include "driver/i2c.h"
-#include "driver/gpio.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
-
 #define I2C_NUM I2C_NUM_0
 #define I2C_SCL GPIO_NUM_22
 #define I2C_SDA GPIO_NUM_21
-#define MPU_ADDR 0x68
-#define SPL_ADDR 0x76
-#define REG 0x75
 
+// #include "MpuSensor.h"
+// #include "driver/i2c_master.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/i2c.h"
 
+// enables use of c++
+// #ifdef __cplusplus
+// extern "C" {
+//     void app_main(void);
+// }
 
-static esp_err_t i2c_master_init(void)
-{
-    int i2c_master_port = I2C_NUM;
-
-    i2c_config_t conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = I2C_SDA,
-        .scl_io_num = I2C_SCL,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = 400000,
-    };
-    i2c_param_config(i2c_master_port, &conf);
-    return i2c_driver_install(i2c_master_port, conf.mode, 0, 0, 0);
-}
-
-esp_err_t read_reg(uint8_t dev_address, uint8_t reg, uint8_t *readBuffer, size_t len)
-{
-	return (i2c_master_write_read_device(I2C_NUM, dev_address, &reg, 1, readBuffer, len, 2000));
-}
-
-esp_err_t write_reg(uint8_t dev_address,uint8_t reg, uint8_t data)
-{
-	uint8_t writeBuf[2];  // writeBuf[len+1];
-	writeBuf[0] = reg;
-	writeBuf[1] = data;
-	return (i2c_master_write_to_device(I2C_NUM, dev_address, writeBuf, 2, 1000));
-}
-
-void binprintf(uint8_t v)
-{
-    unsigned int mask=1<<((sizeof(uint8_t)<<3)-1);
-    while(mask) {
-        printf("%d", (v&mask ? 1 : 0));
-        mask >>= 1;
-    }
-}
-
-void app_main() {
-
+void app_main(){
+    ESP_ERROR_CHECK(i2c_driver_delete(I2C_NUM));
+    // // Initialize i2c_master_bus_config_t following the correct field order
     // i2c_master_bus_config_t i2c_mst_config = {
-    //     .clk_source = I2C_CLK_SRC_DEFAULT,
-    //     .i2c_port = -1, // auto select i2c port 
-    //     .scl_io_num = I2C_SCL,
-    //     .sda_io_num = I2C_SDA,
-    //     .glitch_ignore_cnt = 7,
-    //     .flags.enable_internal_pullup = true,
+    //     .i2c_port = I2C_NUM_0,              // i2c_port: I2C port (using port 0)
+    //     .sda_io_num = I2C_SDA,              // sda_io_num: SDA pin
+    //     .scl_io_num = I2C_SCL,              // scl_io_num: SCL pin
+    //     .clk_source = I2C_CLK_SRC_DEFAULT,  // clk_source: Clock source
+    //     .glitch_ignore_cnt = 7,             // glitch_ignore_cnt: Glitch ignore count
+    //     .intr_priority = 1,                 // intr_priority: Interrupt priority
+    //     .trans_queue_depth = 20,            // trans_queue_depth: Queue depth
+    //     .flags = {                          // flags: Internal pull-up enabled
+    //         .enable_internal_pullup = true
+    //     }
     // };
 
-    // i2c_master_bus_handle_t bus_handle;
-    // ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_mst_config, &bus_handle));
+    // i2c_master_bus_handle_t busHandle;
+    // ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_mst_config, &busHandle));
 
-    // i2c_device_config_t dev_cfg = {
-    //     .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-    //     .device_address = 0x77,
-    //     .scl_speed_hz = 100000,
-    // };
-
-    // i2c_master_dev_handle_t dev_handle;
-    // ESP_ERROR_CHECK(i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle));
-
-    i2c_master_init();
+	// MpuSensor mpuSensor(I2C_ADDR_BIT_LEN_7,0x75,100000);
     
-    write_reg(MPU_ADDR, 0x6B, 0);
-    write_reg(MPU_ADDR, 0x19, 7);
-
+    // for(int i=0;i<8;i++){
+    //     printf("%d ..\n",mpuSensor.readBuffer[i]);
+    // }
     
-    uint8_t mpu_data[10];  
-    uint8_t spl_data[10];
-     
-    uint8_t spl_data_msb[1];
-    uint8_t spl_data_lsb[1];
-    uint8_t spl_data_xlsb[1];
-
-    write_reg(SPL_ADDR,0x08,7); // configure the gyro to start
-
-    read_reg(SPL_ADDR,0x08,spl_data,1);
-
-    printf("spl state:");
-    binprintf(spl_data[0]); // check the state of the spl sensor
-
-    read_reg(SPL_ADDR,0x06,spl_data,1);
-
-    printf("preasure cfg:");
-    binprintf(spl_data[0]); // check the preasure sensor configuration
-
-    read_reg(SPL_ADDR,0x07,spl_data,1); 
-    write_reg(SPL_ADDR,0x07,240); // set to external sensor mode and 128 measure /sec
-    printf("temp cfg:");
-    binprintf(spl_data[0]); // check the temperature sensor configuration
+    // mpuSensor.link_device_to_master(busHandle);
+    // mpuSensor.configure();
+    // mpuSensor.read_sensor_register(0x19,1,2000);
     
-    read_reg(SPL_ADDR,0x10,spl_data,3);
-    
-    // in datasheet, depend on the oversample rate
-    int scaleFactor = 524288;
-
-    // get temperature sensor constant 
-    int16_t c0 = spl_data[0] << 4 | spl_data[1] >> 4;
-    if(c0 & (1 << 11)) // Check for 2's complement negative number
-    c0 = c0 | 0XF000; // Set left bits to one for 2's complement conversion of negative number
-
-    int16_t c1 = ((spl_data[1] & 0xF) << 8) | spl_data[2] ;
-    
-    if(c1 & (1 << 11)) // Check for 2's complement negative number
-        c1 = c1 | 0XF000; // Set left bits to one for 2's complement conversion of negative number
-    printf("c0:%d, c1:%d\n",c0,c1);
-
-
-    while (1){
-        read_reg(MPU_ADDR, 0x3B, mpu_data, 6);
-        int16_t RAWX = (mpu_data[0]<<8)|mpu_data[1];
-        int16_t RAWY = (mpu_data[2]<<8)|mpu_data[3];
-        int16_t RAWZ = (mpu_data[4]<<8)|mpu_data[5];
-
-        float xg = (float)RAWX/16384;
-        float yg = (float)RAWY/16384;
-        float zg = (float)RAWZ/16384;
-
-        printf("Gyroscope:\n");
-        printf("x=%.2f\ty=%.2f\tz=%.2f\n", xg, yg, zg);
-        
-        read_reg(SPL_ADDR, 0x03, spl_data_msb, 1);
-        read_reg(SPL_ADDR, 0x04, spl_data_lsb, 1);
-        read_reg(SPL_ADDR, 0x05, spl_data_xlsb, 1);
-
-        int32_t raw_temp = (spl_data_msb[0] << 8) | spl_data_lsb[0];
-        raw_temp = (raw_temp << 8) | spl_data_xlsb[0];
-
-        if (raw_temp & (1 << 23)){
-            raw_temp = raw_temp | 0XFF000000;
-        }
-        
-        float temp = (float) raw_temp / (float)scaleFactor;
-
-        temp = c0*0.5 + c1*temp;
-        printf("Temperature: %.3f\n",temp);
-        printf("\n");
-        vTaskDelay(75);
-    }
-
+    // while (1){
+    //     std::vector<float> data = mpuSensor.read();
+    //     printf("x=%.2f\ty=%.2f\tz=%.2f\n", data[0], data[1], data[2]);
+    //     vTaskDelay(75);
+    // }
 }
+// #endif
