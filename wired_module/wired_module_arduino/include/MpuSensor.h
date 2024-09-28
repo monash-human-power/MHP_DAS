@@ -1,7 +1,5 @@
 #include <stdint.h>
 
-#include <vector>
-
 #include "I2cSensorBase.h"
 #include "SensorBase.h"
 

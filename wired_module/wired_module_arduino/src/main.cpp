@@ -1,8 +1,8 @@
-// Copyright (c) Sandeep Mistry. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
+#include <BarometerSensor.h>
 #include <CAN.h>
 #include <MpuSensor.h>
+
+#include <vector>
 
 #include "driver/i2c.h"
 
@@ -10,8 +10,12 @@
 #define I2C_SCL GPIO_NUM_22
 #define I2C_SDA GPIO_NUM_21
 
-// Setup MPU sensor
+// SETUP SENSORS HERE
+// ========================================
 MpuSensor mpuSensor(I2C_NUM, 0x68, 0x13);
+BarometerSensor barometerSensor(I2C_NUM, 0x76, 0x11);
+std::vector<SensorBase*> sensors = {&mpuSensor, &barometerSensor};
+// ==================================================================
 
 static esp_err_t i2c_master_init(void) {
     i2c_config_t conf = {
@@ -66,10 +70,16 @@ void setup() {
     // Initialize I2C
     i2c_master_init();
 
-    mpuSensor.configure();
+    // Configure all sensors
+    for (auto sensor : sensors) {
+        sensor->configure();
+    }
 }
 
 void loop() {
-    mpuSensor.send();
+    // Send CAN bus from all sensors
+    for (auto sensor : sensors) {
+        sensor->send();
+    }
     delay(1000);
 }
