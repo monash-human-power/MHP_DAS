@@ -2,9 +2,32 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include <CAN.h>
+#include <MpuSensor.h>
 
 #include "driver/i2c.h"
-#include "i2c.h"
+
+#define I2C_NUM I2C_NUM_0
+#define I2C_SCL GPIO_NUM_22
+#define I2C_SDA GPIO_NUM_21
+
+// Setup MPU sensor
+MpuSensor mpuSensor(I2C_NUM, 0x68, 0x13);
+
+static esp_err_t i2c_master_init(void) {
+    i2c_config_t conf = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = I2C_SDA,
+        .scl_io_num = I2C_SCL,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master = {
+            .clk_speed = 400000,
+        }
+
+    };
+    i2c_param_config(I2C_NUM, &conf);
+    return i2c_driver_install(I2C_NUM, conf.mode, 0, 0, 0);
+}
 
 void onReceive(int packetSize) {
     // Get all bytes from packet
@@ -23,12 +46,7 @@ void onReceive(int packetSize) {
 }
 
 void setup() {
-    // Uninstall old i2c driver
-    // i2c_driver_delete(I2C_NUM_0);
-    // while (1);
-
-    // Setup i2c and CAN bus
-    setup_i2c();
+    // Setup CAN bus
     CAN.setPins(16, 17);
     Serial.begin(115200);
     while (!Serial);
@@ -44,22 +62,14 @@ void setup() {
 
     // Set up receive callback
     CAN.onReceive(onReceive);
+
+    // Initialize I2C
+    i2c_master_init();
+
+    mpuSensor.configure();
 }
 
 void loop() {
-    // Send temperature data
-    CAN.beginPacket(0x11);  // module | sensor // 0001 | 0001
-    uint8_t bufferT[4];
-    readTemp(bufferT);                    // Read data from sensor and store in buffer
-    CAN.write(bufferT, sizeof(bufferT));  // Send packet
-    CAN.endPacket();
-
-    // Send gyroscope data
-    CAN.beginPacket(0x13);  // module | sensor // 0001 | 0011
-    uint8_t bufferG[4];
-    readGyroZ(bufferG);
-    CAN.write(bufferG, sizeof(bufferG));
-    CAN.endPacket();
-
+    mpuSensor.send();
     delay(1000);
 }
