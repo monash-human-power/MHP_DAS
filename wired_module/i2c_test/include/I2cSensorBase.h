@@ -1,4 +1,4 @@
-#include "driver/i2c_master.h"
+#include "driver/i2c.h"
 
 #ifndef I2C_BASE
 #define I2C_BASE
@@ -7,15 +7,14 @@ class I2cSensorBase{
 
     public:
         // field
-        i2c_device_config_t sensorConfig;
-        i2c_master_dev_handle_t sensorHandle;
-        uint8_t *readBuffer;
+        uint8_t sensorAddress;
+        i2c_port_t masterPortNum;
+        uint8_t readBuffer[8]; 
 
-        // construc
-        explicit I2cSensorBase(i2c_addr_bit_len_t addressLength, uint8_t sensorAddress,int clockFrequency);
+        // construct
+        explicit I2cSensorBase(i2c_port_t masterPortNum, uint8_t sensorAddress);
         void read_sensor_register(uint8_t registerAddress,size_t readLength,int timeout);
         void write_sensor_register(uint8_t registerAddress, uint8_t data,int timeout);
-        void link_device_to_master(i2c_master_bus_handle_t busHandle);
 };
 
 #endif 
