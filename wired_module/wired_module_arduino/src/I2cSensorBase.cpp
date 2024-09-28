@@ -1,7 +1,5 @@
 #include "I2cSensorBase.h"
 
-#include "driver/i2c.h"
-
 I2cSensorBase::I2cSensorBase(i2c_port_t masterPortNum, uint8_t sensorAddress, uint8_t sensorID) {
     this->masterPortNum = masterPortNum;
     this->sensorAddress = sensorAddress;

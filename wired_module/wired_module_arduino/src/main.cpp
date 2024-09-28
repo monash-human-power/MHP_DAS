@@ -1,5 +1,6 @@
 #include <BarometerSensor.h>
 #include <CAN.h>
+#include <I2cMaster.h>
 #include <MpuSensor.h>
 
 #include <vector>
@@ -10,28 +11,20 @@
 #define I2C_SCL GPIO_NUM_22
 #define I2C_SDA GPIO_NUM_21
 
+// Function prototypes
+static esp_err_t i2c_master_init(void);
+void onReceive(int packetSize);
+void setup();
+void loop();
+
+// ==================================================================
 // SETUP SENSORS HERE
-// ========================================
-MpuSensor mpuSensor(I2C_NUM, 0x68, 0x13);
-BarometerSensor barometerSensor(I2C_NUM, 0x76, 0x11);
+// ==================================================================
+I2cMaster i2cMaster(I2C_NUM, I2C_SDA, I2C_SCL, 400000);
+MpuSensor mpuSensor(i2cMaster.portNum, 0x68, 0x13);
+BarometerSensor barometerSensor(i2cMaster.portNum, 0x76, 0x11);
 std::vector<SensorBase*> sensors = {&mpuSensor, &barometerSensor};
 // ==================================================================
-
-static esp_err_t i2c_master_init(void) {
-    i2c_config_t conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = I2C_SDA,
-        .scl_io_num = I2C_SCL,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master = {
-            .clk_speed = 400000,
-        }
-
-    };
-    i2c_param_config(I2C_NUM, &conf);
-    return i2c_driver_install(I2C_NUM, conf.mode, 0, 0, 0);
-}
 
 void onReceive(int packetSize) {
     // Get all bytes from packet
@@ -64,11 +57,8 @@ void setup() {
     // Configure can bus to loopback mode for self test
     CAN.loopback();
 
-    // Set up receive callback
+    // Set up receive callback, for self testing
     CAN.onReceive(onReceive);
-
-    // Initialize I2C
-    i2c_master_init();
 
     // Configure all sensors
     for (auto sensor : sensors) {
