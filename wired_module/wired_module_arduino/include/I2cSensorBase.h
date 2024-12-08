@@ -2,7 +2,8 @@
 
 #include "SensorBase.h"
 #include "constants.h"
-#include "driver/i2c.h"
+
+#include <driver/i2c.h>
 
 class I2cSensorBase : public SensorBase {
    public:
