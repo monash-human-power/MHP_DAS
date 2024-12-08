@@ -1,7 +1,7 @@
 #include "I2cMaster.h"
 
-I2cMaster::I2cMaster(i2c_port_t portNum, int sda, int scl, int clockFrequency) {
-    this->portNum = portNum;
+I2cMaster::I2cMaster(i2c_port_t portNum, int sda, int scl, int clockFrequency)
+    : portNum(portNum) {
     i2c_config_t masterConfig = {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = sda,
