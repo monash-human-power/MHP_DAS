@@ -1,21 +1,14 @@
-#include "I2cSensorBase.h"
+#pragma once
 
-#ifndef BAROMETER_SENSOR
-#define BAROMETER_SENSOR
+#include "I2cSensorBase.h"
 
 class BarometerSensor : public I2cSensorBase {
    public:
-    // Attributes
-    const int scaleFactor = 524288;
+    BarometerSensor(i2c_port_t masterPortNum, uint8_t sensorAddress, uint8_t sensorID);
+
+    void read() override;
+
+   private:
     int16_t c0;
     int16_t c1;
-
-    // Use parent constructor
-    using I2cSensorBase::I2cSensorBase;
-
-    // Methods
-    void configure() override;
-    void read() override;
 };
-
-#endif

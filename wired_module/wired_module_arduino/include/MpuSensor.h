@@ -1,16 +1,10 @@
-#include "I2cSensorBase.h"
+#pragma once
 
-#ifndef MPU_SENSOR
-#define MPU_SENSOR
+#include "I2cSensorBase.h"
 
 class MpuSensor : public I2cSensorBase {
    public:
-    // Use parent constructor
-    using I2cSensorBase::I2cSensorBase;
+    explicit MpuSensor(i2c_port_t masterPortNum, uint8_t sensorAddress, uint8_t sensorID);
 
-    // Methods
-    void configure() override;
     void read() override;
 };
-
-#endif
