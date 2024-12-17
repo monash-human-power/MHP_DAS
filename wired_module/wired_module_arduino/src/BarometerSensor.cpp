@@ -3,7 +3,15 @@
 #include <cstring>
 
 void BarometerSensor::configure() {
+    // use external sensor
+    write_sensor_register(0x07,0x80,1000);
+
+    // set to continous temperature measurement 
+    write_sensor_register(0x08, 0x06, 1000);
+
+    // get coefficients
     read_sensor_register(0x10, 3, 1000);
+
     this->c0 = this->readBuffer[0] << 4 | this->readBuffer[1] >> 4;
     if (this->c0 & (1 << 11))
         this->c0 = this->c0 | 0XF000;

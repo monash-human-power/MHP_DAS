@@ -17,3 +17,9 @@ void I2cSensorBase::write_sensor_register(uint8_t registerAddress, uint8_t data,
     writeBuf[1] = data;
     i2c_master_write_to_device(this->masterPortNum, this->sensorAddress, writeBuf, 2, timeout);
 }
+
+void I2cSensorBase::print_read_buffer() {
+    for (int i = 0; i < sizeof(this->readBuffer); i++) {
+        printf("%d:0x%02x\n",i,this->readBuffer[i]);
+    }
+}
