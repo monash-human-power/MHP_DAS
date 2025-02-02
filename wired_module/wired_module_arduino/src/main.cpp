@@ -2,6 +2,7 @@
 #include <CAN.h>
 #include <I2cMaster.h>
 #include <MpuSensor.h>
+#include <Adc1.h>
 
 #include <vector>
 
@@ -23,7 +24,8 @@ void loop();
 I2cMaster i2cMaster(I2C_NUM, I2C_SDA, I2C_SCL, 400000);
 MpuSensor mpuSensor(i2cMaster.portNum, 0x68, 0x13);
 BarometerSensor barometerSensor(i2cMaster.portNum, 0x76, 0x11);
-std::vector<SensorBase*> sensors = {&mpuSensor, &barometerSensor};
+Adc1 adc1(ADC1_CHANNEL_0, ADC_ATTEN_DB_12, ADC_WIDTH_BIT_12, 0x12);
+std::vector<SensorBase*> sensors = {&mpuSensor,&barometerSensor,&adc1};
 // ==================================================================
 
 void onReceive(int packetSize) {
